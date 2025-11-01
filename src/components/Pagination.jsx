@@ -33,7 +33,6 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
         }`}
       >
         <ChevronLeft className="w-4 h-4" />
-        Previous
       </button>
 
       {/* Nomor Halaman */}
@@ -67,7 +66,6 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
             : 'text-gray-700 border-gray-300 hover:bg-gray-100'
         }`}
       >
-        Next
         <ChevronRight className="w-4 h-4" />
       </button>
     </div>
