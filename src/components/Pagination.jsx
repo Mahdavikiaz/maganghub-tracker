@@ -26,7 +26,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-sm font-medium transition ${
+        className={`flex items-center gap-1 px-1.5 py-1.5 rounded-lg border text-sm font-medium transition ${
           currentPage === 1
             ? 'text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed'
             : 'text-gray-700 border-gray-300 hover:bg-gray-100'
@@ -60,7 +60,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-sm font-medium transition ${
+        className={`flex items-center gap-1 px-1.5 py-1.5 rounded-lg border text-sm font-medium transition ${
           currentPage === totalPages
             ? 'text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed'
             : 'text-gray-700 border-gray-300 hover:bg-gray-100'
