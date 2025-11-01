@@ -38,14 +38,14 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
       {/* Nomor Halaman */}
       {pageNumbers.map((page, index) =>
         page === '...' ? (
-          <span key={index} className="px-3 py-1 text-gray-500 select-none">
+          <span key={index} className="px-2 py-1.5 text-gray-500 select-none">
             ...
           </span>
         ) : (
           <button
             key={index}
             onClick={() => onPageChange(page)}
-            className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition ${
+            className={`px-2 py-1.5 rounded-lg border text-sm font-medium transition ${
               currentPage === page
                 ? 'bg-blue-600 text-white border-blue-600'
                 : 'border-gray-300 text-gray-700 hover:bg-gray-100'
