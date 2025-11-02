@@ -41,7 +41,6 @@ function VacancyCard({ vacancy }) {
         {hasLogo ? (
           <img
             src={vacancy.perusahaan.logo}
-            alt={`Logo ${vacancy.perusahaan.nama_perusahaan}`}
             className="w-14 h-14 rounded-lg object-contain mr-4 border border-gray-200 bg-gray-50 p-1"
           />
         ) : (
