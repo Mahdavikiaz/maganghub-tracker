@@ -79,7 +79,7 @@ function VacancyList() {
         if (selectedProv && selectedProv.value) {
           // Fetch vacancies *for selected province*, loop pages
           do {
-            const url = `https://maganghub.kemnaker.go.id/be/v1/api/list/vacancies?angkatan=2&kode_provinsi=${selectedProv.value}&page=${page}&limit=50`;
+            const url = `https://maganghub.kemnaker.go.id/be/v1/api/list/vacancies?angkatan=2&kode_provinsi=${selectedProv.value}&page=${page}`;
             const res = await fetch(url);
             const json = await res.json();
             if (json && Array.isArray(json.data)) {
@@ -225,27 +225,6 @@ function VacancyList() {
           }
         }}
       />
-      {/* <div className="flex items-center justify-center gap-4 mt-8">
-        <button
-          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-          disabled={currentPage === 1}
-          className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50"
-        >
-          Prev
-        </button>
-
-        <div>
-          Page {currentPage} / {totalPages}
-        </div>
-
-        <button
-          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-          disabled={currentPage === totalPages}
-          className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50"
-        >
-          Next
-        </button>
-      </div> */}
     </div>
   );
 }
