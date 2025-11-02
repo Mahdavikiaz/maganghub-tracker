@@ -61,6 +61,7 @@ function VacancyCard({ vacancy }) {
       <div className="text-sm text-gray-600 space-y-1 mb-3">
         <p>
           <span className="font-medium">Lokasi:</span>{' '}
+          {vacancy.perusahaan?.alamat},{' '}
           {vacancy.perusahaan?.nama_kabupaten},{' '}
           {vacancy.perusahaan?.nama_provinsi}
         </p>
