@@ -9,12 +9,15 @@ function VacancyList() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const perPage = 9; // card per page (frontend pagination)
+  const perPage = 9;
   const [filter, setFilter] = useState({
     provinsi: null,
     kota: null,
     jurusan: null,
   });
+
+  const [provinsiOptions, setProvinsiOptions] = useState([]);
+  const [cityOptions, setCityOptions] = useState([]);
 
   const jurusanOptions = [
     { value: 'Teknik Informatika', label: 'Teknik Informatika' },
@@ -42,10 +45,7 @@ function VacancyList() {
     { value: 'Farmasi', label: 'Farmasi' },
   ];
 
-  const [provinsiOptions, setProvinsiOptions] = useState([]);
-  // optionally you can keep kotaOptions/jurusanOptions or derive them from vacancies
-
-  // --- 1) fetch provinsi list once (for dropdown) ---
+  // --- 1) Fetch provinsi ---
   useEffect(() => {
     const fetchProvinsi = async () => {
       try {
@@ -54,7 +54,7 @@ function VacancyList() {
         );
         const json = await res.json();
         const opts = (json.data || []).map((p) => ({
-          value: p.kode_propinsi, // use kode_propinsi for API param
+          value: p.kode_propinsi,
           label: p.nama_propinsi,
         }));
         setProvinsiOptions(opts);
@@ -65,10 +65,36 @@ function VacancyList() {
     fetchProvinsi();
   }, []);
 
-  // --- 2) fetch vacancies: if provinsi selected use kode_provinsi param,
-  //     otherwise fetch all vacancies (loop pages) ---
+  // --- 2) Fetch kota berdasarkan provinsi yang dipilih ---
   useEffect(() => {
-    const fetchAllForProvinsiOrAll = async () => {
+    const fetchCities = async () => {
+      if (!filter.provinsi) {
+        setCityOptions([]);
+        setFilter((prev) => ({ ...prev, kota: null }));
+        return;
+      }
+      try {
+        const res = await fetch(
+          `https://maganghub.kemnaker.go.id/be/v1/api/list/cities?kode_propinsi=${filter.provinsi.value}&order_by=nama_kabupaten&order_direction=ASC&page=1&limit=100`
+        );
+        const json = await res.json();
+        const opts = (json.data || []).map((c) => ({
+          value: c.nama_kabupaten,
+          label: c.nama_kabupaten,
+        }));
+        setCityOptions(opts);
+      } catch (err) {
+        console.error('Failed to load cities', err);
+        setCityOptions([]);
+      }
+    };
+
+    fetchCities();
+  }, [filter.provinsi]);
+
+  // --- 3) Fetch vacancies ---
+  useEffect(() => {
+    const fetchVacancies = async () => {
       setLoading(true);
       try {
         const selectedProv = filter.provinsi;
@@ -76,32 +102,22 @@ function VacancyList() {
         let page = 1;
         let lastPage = 1;
 
-        if (selectedProv && selectedProv.value) {
-          // Fetch vacancies *for selected province*, loop pages
-          do {
-            const url = `https://maganghub.kemnaker.go.id/be/v1/api/list/vacancies?angkatan=2&kode_provinsi=${selectedProv.value}&page=${page}`;
-            const res = await fetch(url);
-            const json = await res.json();
-            if (json && Array.isArray(json.data)) {
-              all = all.concat(json.data);
-            }
-            // guard: if meta exists read last_page; otherwise break
-            lastPage = json?.meta?.pagination?.last_page ?? page;
-            page++;
-          } while (page <= lastPage);
-        } else {
-          // No province filter -> fetch all vacancies (angkatan=2) across pages
-          do {
-            const url = `https://maganghub.kemnaker.go.id/be/v1/api/list/vacancies?angkatan=2&page=${page}&limit=50`;
-            const res = await fetch(url);
-            const json = await res.json();
-            if (json && Array.isArray(json.data)) {
-              all = all.concat(json.data);
-            }
-            lastPage = json?.meta?.pagination?.last_page ?? page;
-            page++;
-          } while (page <= lastPage);
-        }
+        const baseUrl =
+          'https://maganghub.kemnaker.go.id/be/v1/api/list/vacancies';
+        const baseParams = selectedProv
+          ? `angkatan=2&kode_provinsi=${selectedProv.value}`
+          : 'angkatan=2';
+
+        do {
+          const url = `${baseUrl}?${baseParams}&page=${page}&limit=50`;
+          const res = await fetch(url);
+          const json = await res.json();
+          if (json && Array.isArray(json.data)) {
+            all = all.concat(json.data);
+          }
+          lastPage = json?.meta?.pagination?.last_page ?? page;
+          page++;
+        } while (page <= lastPage);
 
         setVacancies(all);
         setFilteredVacancies(all);
@@ -111,15 +127,14 @@ function VacancyList() {
         setFilteredVacancies([]);
       } finally {
         setLoading(false);
-        setCurrentPage(1); // reset UI pagination to first page
+        setCurrentPage(1);
       }
     };
 
-    fetchAllForProvinsiOrAll();
-    // re-run when user changes selected province
+    fetchVacancies();
   }, [filter.provinsi]);
 
-  // --- 3) client-side filtering (search + kota + jurusan) ---
+  // --- 4) Filtering (search + kota + jurusan) ---
   useEffect(() => {
     let result = vacancies;
 
@@ -135,36 +150,31 @@ function VacancyList() {
     }
 
     if (filter.jurusan) {
-      result = result.filter((v) =>
-        Array.isArray(v.program_studi)
-          ? v.program_studi.some((p) => p.title === filter.jurusan.value)
-          : // sometimes program_studi might be stringified JSON; attempt parse
-            (() => {
-              try {
-                const arr =
-                  typeof v.program_studi === 'string'
-                    ? JSON.parse(v.program_studi)
-                    : [];
-                return arr.some((p) => p.title === filter.jurusan.value);
-              } catch (e) {
-                console.log('Error', e);
-                return false;
-              }
-            })()
-      );
+      result = result.filter((v) => {
+        try {
+          const jurusanData =
+            typeof v.program_studi === 'string'
+              ? JSON.parse(v.program_studi)
+              : v.program_studi;
+          return Array.isArray(jurusanData)
+            ? jurusanData.some((p) => p.title === filter.jurusan.value)
+            : false;
+        } catch {
+          return false;
+        }
+      });
     }
 
     setFilteredVacancies(result);
     setCurrentPage(1);
   }, [searchQuery, filter.kota, filter.jurusan, vacancies]);
 
-  // --- frontend pagination ---
+  // --- Pagination ---
   const indexOfLast = currentPage * perPage;
   const indexOfFirst = indexOfLast - perPage;
   const currentVacancies = filteredVacancies.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.max(1, Math.ceil(filteredVacancies.length / perPage));
 
-  // --- render ---
   if (loading) {
     return (
       <div className="text-center mt-20">Sabar yaa lagi loading nih...</div>
@@ -173,8 +183,9 @@ function VacancyList() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Filters */}
+      {/* Filter bar */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
+        {/* Search */}
         <input
           type="text"
           placeholder="Cari posisi magang..."
@@ -183,18 +194,38 @@ function VacancyList() {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
 
+        {/* Provinsi */}
         <div className="flex-1 min-w-[250px]">
           <Select
             options={provinsiOptions}
             value={filter.provinsi}
-            onChange={(selected) =>
-              setFilter((prev) => ({ ...prev, provinsi: selected }))
-            }
+            onChange={(selected) => {
+              setFilter((prev) => ({
+                ...prev,
+                provinsi: selected,
+                kota: null, // reset kota kalau provinsi berubah
+              }));
+            }}
             placeholder="Pilih Provinsi"
             isClearable
           />
         </div>
 
+        {/* Kota */}
+        <div className="flex-1 min-w-[250px]">
+          <Select
+            options={cityOptions}
+            value={filter.kota}
+            onChange={(selected) =>
+              setFilter((prev) => ({ ...prev, kota: selected }))
+            }
+            placeholder="Pilih Kabupaten/Kota"
+            isClearable
+            isDisabled={!filter.provinsi}
+          />
+        </div>
+
+        {/* Jurusan */}
         <div className="flex-1 min-w-[250px]">
           <Select
             options={jurusanOptions}
@@ -215,14 +246,12 @@ function VacancyList() {
         ))}
       </div>
 
-      {/* Pagination controls */}
+      {/* Pagination */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={(page) => {
-          if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-          }
+          if (page >= 1 && page <= totalPages) setCurrentPage(page);
         }}
       />
     </div>
