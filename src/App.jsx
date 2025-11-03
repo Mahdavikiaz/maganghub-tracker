@@ -28,7 +28,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header Section */}
-      <header class="relative overflow-hidden bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600 text-white py-16 text-center animate-gradient-x">
+      <header class="relative overflow-hidden bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600 bg-[length:400%_400%] animate-gradient-x text-white py-24 text-center">
         <div class="relative z-10">
           <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight mb-6 animate-fade-up">
             💼 Lowongan Maganghub Batch 2
@@ -41,6 +41,17 @@ function App() {
         <div class="absolute inset-0 z-0 overflow-hidden">
           <div class="absolute bg-white/10 w-72 h-72 rounded-full blur-3xl top-10 left-[-100px] animate-float-slow"></div>
           <div class="absolute bg-white/10 w-80 h-80 rounded-full blur-3xl bottom-10 right-[-120px] animate-float-fast"></div>
+        </div>
+
+        <div class="absolute bottom-0 left-0 right-0 overflow-hidden leading-[0]">
+          <div class="animate-wave-move">
+            <svg
+              class="relative block w-[200%] h-24"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 1200 120"
+              preserveAspectRatio="none"
+            ></svg>
+          </div>
         </div>
       </header>
 
