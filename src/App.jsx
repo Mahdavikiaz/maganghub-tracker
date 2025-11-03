@@ -28,11 +28,20 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header Section */}
-      <header className="bg-gradient-to-r from-blue-500 to-indigo-600 py-12 mb-8 shadow-lg text-center text-white">
-        <h1 className="text-3xl font-bold tracking-wide mb-4">
-          Lowongan Maganghub Batch 2
-        </h1>
-        <p className="text-lg">Spill lowongan Maganghub di Batch 2!</p>
+      <header class="relative overflow-hidden bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600 text-white py-16 text-center animate-gradient-x">
+        <div class="relative z-10">
+          <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight mb-6 animate-fade-up">
+            💼 Lowongan Maganghub Batch 2
+          </h1>
+          <p class="text-lg sm:text-xl font-light opacity-90 animate-fade-up-delay">
+            Spill lowongan Maganghub di Batch 2!
+          </p>
+        </div>
+
+        <div class="absolute inset-0 z-0 overflow-hidden">
+          <div class="absolute bg-white/10 w-72 h-72 rounded-full blur-3xl top-10 left-[-100px] animate-float-slow"></div>
+          <div class="absolute bg-white/10 w-80 h-80 rounded-full blur-3xl bottom-10 right-[-120px] animate-float-fast"></div>
+        </div>
       </header>
 
       <VacancyList />
