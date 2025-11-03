@@ -140,8 +140,13 @@ function VacancyList() {
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter((v) => (v.posisi || '').toLowerCase().includes(q));
-    }
+      result = result.filter(
+        (v) =>
+          (v.posisi || '').toLowerCase().includes(q) ||
+          (v.perusahaan?.nama_perusahaan || '').toLowerCase().includes(q)
+      );
+  }
+
 
     if (filter.kota) {
       result = result.filter(
@@ -188,7 +193,7 @@ function VacancyList() {
         {/* Search */}
         <input
           type="text"
-          placeholder="Cari posisi magang..."
+          placeholder="Cari Posisi Magang/Nama Perusahaan..."
           className="w-full md:w-1/3 p-2 border rounded"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
