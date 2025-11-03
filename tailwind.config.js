@@ -9,6 +9,7 @@ export default {
         'fade-up-delay': 'fadeUp 1.4s ease-out forwards',
         'float-slow': 'float 8s ease-in-out infinite',
         'float-fast': 'float 5s ease-in-out infinite',
+        'wave-move': 'waveMove 10s linear infinite',
       },
       keyframes: {
         gradientX: {
@@ -22,6 +23,10 @@ export default {
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-20px)' },
+        },
+        waveMove: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
         },
       },
       backgroundSize: {
