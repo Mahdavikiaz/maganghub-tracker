@@ -3,18 +3,18 @@ import React from 'react';
 function VacancyCard({ vacancy }) {
   const peluang =
     vacancy.jumlah_kuota > 0
-      ? ((vacancy.jumlah_terdaftar / vacancy.jumlah_kuota) * 100).toFixed(2)
+      ? Math.round((vacancy.jumlah_kuota / vacancy.jumlah_terdaftar) * 100)
       : 0;
 
-  const peluangLabel =
-    peluang < 30 ? 'Tinggi' : peluang < 70 ? 'Sedang' : 'Rendah';
+  // const peluangLabel =
+  //   peluang < 30 ? 'Tinggi' : peluang < 70 ? 'Sedang' : 'Rendah';
 
   const peluangColor =
     peluang < 30
-      ? 'bg-green-100 text-green-700'
+      ? 'bg-red-100 text-red-700'
       : peluang < 70
       ? 'bg-yellow-100 text-yellow-700'
-      : 'bg-red-100 text-red-700';
+      : 'bg-green-100 text-green-700';
 
   const detailLink = `https://maganghub.kemnaker.go.id/lowongan/view/${vacancy.id_posisi}`;
 
@@ -61,23 +61,14 @@ function VacancyCard({ vacancy }) {
       <div className="text-sm text-gray-600 space-y-1 mb-3">
         <p>
           <span className="font-medium">Lokasi:</span>{' '}
-          {vacancy.perusahaan?.alamat},{' '}
-          {vacancy.perusahaan?.nama_kabupaten},{' '}
+          {vacancy.perusahaan?.alamat}, {vacancy.perusahaan?.nama_kabupaten},{' '}
           {vacancy.perusahaan?.nama_provinsi}
         </p>
-        <div className="flex flex-wrap gap-3 mt-2">
-          <span className="flex items-center gap-1 mt-2">
-            <strong>Pendaftar:</strong> {vacancy.jumlah_terdaftar ?? 0}
-          </span>
-          <span className="flex items-center gap-1 mt-2">
-            <strong>Kuota:</strong> {vacancy.jumlah_kuota ?? 0}
-          </span>
-        </div>
       </div>
 
       {/* Deskripsi & Jurusan */}
       <div className="text-sm text-gray-700 mb-4">
-        <p className="mt-6 mb-2">
+        <p className="mt-2 mb-2">
           <span className="font-medium text-gray-800">Deskripsi:</span>{' '}
           <span className="text-gray-600">{deskripsiSingkat}</span>
         </p>
@@ -87,15 +78,20 @@ function VacancyCard({ vacancy }) {
         </p>
       </div>
 
+      {/* <div className="flex flex-wrap gap-3 mt-2"></div> */}
+
       {/* Peluang & Status */}
-      <div className="flex justify-between items-center mb-4">
-        <span className="text-xs text-gray-500">
-          Status: {vacancy.ref_status_posisi?.nama_status_posisi}
+      <div className="flex justify-between items-center mb-6">
+        <span className="flex items-center gap-1 mt-2">
+          <strong>Pendaftar:</strong> {vacancy.jumlah_terdaftar ?? 0}
+        </span>
+        <span className="flex items-center gap-1 mt-2">
+          <strong>Kuota:</strong> {vacancy.jumlah_kuota ?? 0}
         </span>
         <span
           className={`px-3 py-1 rounded-full text-xs font-medium ${peluangColor}`}
         >
-          Peluang: {peluangLabel}
+          Peluang: {peluang}%
         </span>
       </div>
 
