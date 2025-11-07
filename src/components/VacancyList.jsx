@@ -7,7 +7,6 @@ function VacancyList() {
   const [vacanciesRaw, setVacanciesRaw] = useState([]);
   const [vacanciesFiltered, setVacanciesFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const perPage = 12;
 
@@ -66,122 +65,105 @@ function VacancyList() {
     fetchCities();
   }, [filter.provinsi]);
 
-  // --- Fetch Vacancies ---
+  // --- Fetch Vacancies (loop semua halaman untuk filter provinsi/kota) ---
   useEffect(() => {
-    const fetchVacanciesPage = async () => {
+    const fetchVacancies = async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams();
-        params.append('angkatan', '2');
-        params.append('page', currentPage);
-        params.append('limit', perPage);
+        const paramsBase = new URLSearchParams();
+        paramsBase.append('angkatan', '2');
+        paramsBase.append('order_by', 'jumlah_kuota');
+        paramsBase.append('order_direction', 'DESC');
 
-        if (filter.provinsi) {
-          params.append('kode_provinsi', filter.provinsi.value);
+        let allData = [];
+
+        if (!filter.provinsi && !filter.kota) {
+          // normal paginate
+          paramsBase.append('page', currentPage);
+          paramsBase.append('limit', perPage);
+
+          const url = `https://maganghub.kemnaker.go.id/be/v1/api/list/vacancies-aktif?${paramsBase.toString()}`;
+          const res = await fetch(url);
+          const json = await res.json();
+
+          allData = json.data || [];
+          setTotalPages(json?.meta?.pagination?.last_page ?? 1);
+        } else {
+          // fetch semua page berdasarkan provinsi/kota
+          const kodeProv = filter.provinsi?.value || '';
+          const namaKab = filter.kota?.value || '';
+          let page = 1;
+          let hasMore = true;
+
+          while (hasMore) {
+            const params = new URLSearchParams(paramsBase);
+            params.append('page', page);
+            params.append('limit', 500);
+            if (kodeProv) params.append('kode_provinsi', kodeProv);
+            if (namaKab) params.append('nama_kabupaten', namaKab);
+
+            const url = `https://maganghub.kemnaker.go.id/be/v1/api/list/vacancies-aktif?${params.toString()}`;
+            const res = await fetch(url);
+            const json = await res.json();
+
+            const data = json.data || [];
+            if (data.length === 0) {
+              hasMore = false;
+            } else {
+              allData = [...allData, ...data];
+              page++;
+            }
+
+            if (page > 2000) hasMore = false; // safety stop
+          }
+
+          setTotalPages(Math.ceil(allData.length / perPage));
         }
 
-        if (filter.kota) {
-          params.append('nama_kabupaten', filter.kota.value);
-        }
+        // --- Mapping tambahan untuk deskripsi ---
+        const mapped = allData.map((v) => {
+          const deskripsiSingkat = v.deskripsi_posisi
+            ? v.deskripsi_posisi.length > 120
+              ? v.deskripsi_posisi.substring(0, 120) + '...'
+              : v.deskripsi_posisi
+            : 'Tidak ada deskripsi.';
+          return { ...v, deskripsiSingkat };
+        });
 
-        if (searchQuery) {
-          params.append('search', searchQuery);
-        }
-
-        const url = `https://maganghub.kemnaker.go.id/be/v1/api/list/vacancies-aktif?order_by=jumlah_kuota&order_direction=DESC&${params.toString()}`;
-
-        const res = await fetch(url);
-        const json = await res.json();
-
-        const data = json.data || [];
-        const lastPage = json?.meta?.pagination?.last_page ?? 1;
-        setTotalPages(lastPage);
-        setVacanciesRaw(data);
+        setVacanciesRaw(mapped);
+        setVacanciesFiltered(mapped);
       } catch (err) {
         console.error('Error fetching vacancies', err);
         setVacanciesRaw([]);
+        setVacanciesFiltered([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchVacanciesPage();
-  }, [currentPage, filter.provinsi, filter.kota, searchQuery]);
 
-  // --- Filter lokal ---
-  useEffect(() => {
-    let result = [...vacanciesRaw];
-
-    if (searchQuery && searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (v) =>
-          (v.posisi || '').toLowerCase().includes(q) ||
-          (v.perusahaan?.nama_perusahaan || '').toLowerCase().includes(q)
-      );
-    }
-
-    if (filter.provinsi) {
-      const prov = filter.provinsi.label.toLowerCase();
-      result = result.filter((v) =>
-        (v.perusahaan?.nama_provinsi || '').toLowerCase().includes(prov)
-      );
-    }
-
-    if (filter.kota) {
-      const kota = filter.kota.value.toLowerCase();
-      result = result.filter((v) =>
-        (v.perusahaan?.nama_kabupaten || '').toLowerCase().includes(kota)
-      );
-    }
-
-    const mapped = result.map((v) => {
-      const deskripsiSingkat = v.deskripsi_posisi
-        ? v.deskripsi_posisi.length > 120
-          ? v.deskripsi_posisi.substring(0, 120) + '...'
-          : v.deskripsi_posisi
-        : 'Tidak ada deskripsi.';
-      let prodiParsed = [];
-      try {
-        prodiParsed =
-          typeof v.program_studi === 'string'
-            ? JSON.parse(v.program_studi)
-            : v.program_studi || [];
-      } catch {
-        prodiParsed = [];
-      }
-      return { ...v, deskripsiSingkat, prodiParsed };
-    });
-
-    setVacanciesFiltered(mapped);
-  }, [vacanciesRaw, searchQuery, filter]);
+    fetchVacancies();
+  }, [currentPage, filter.provinsi, filter.kota]);
 
   // Reset page ke 1 setiap filter berubah
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter]);
+  }, [filter.provinsi, filter.kota]);
 
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Filter bar */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Cari Posisi Magang / Nama Perusahaan..."
-          className="w-full md:w-1/3 p-2 border rounded"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setCurrentPage(1);
-          }}
-        />
-
         {/* Provinsi */}
         <div className="flex-1 min-w-[200px]">
           <Select
             options={provinsiOptions}
             value={filter.provinsi}
             onChange={(selected) =>
-              setFilter((prev) => ({ ...prev, provinsi: selected, kota: null }))
+              setFilter((prev) => ({
+                ...prev,
+                provinsi: selected,
+                kota: null,
+              }))
             }
             placeholder="Pilih Provinsi"
             isClearable
@@ -194,7 +176,10 @@ function VacancyList() {
             options={cityOptions}
             value={filter.kota}
             onChange={(selected) =>
-              setFilter((prev) => ({ ...prev, kota: selected }))
+              setFilter((prev) => ({
+                ...prev,
+                kota: selected,
+              }))
             }
             placeholder="Pilih Kabupaten/Kota"
             isClearable
@@ -211,9 +196,14 @@ function VacancyList() {
       ) : vacanciesFiltered.length > 0 ? (
         <>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {vacanciesFiltered.map((v) => (
-              <VacancyCard key={v.id_posisi} vacancy={v} />
-            ))}
+            {(() => {
+              const start = (currentPage - 1) * perPage;
+              const end = start + perPage;
+              const pagedData = vacanciesFiltered.slice(start, end);
+              return pagedData.map((v) => (
+                <VacancyCard key={v.id_posisi} vacancy={v} />
+              ));
+            })()}
           </div>
           <div className="mt-6">
             <Pagination
