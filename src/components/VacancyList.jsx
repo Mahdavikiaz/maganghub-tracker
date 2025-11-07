@@ -17,8 +17,7 @@ function VacancyList() {
   const [provinsiOptions, setProvinsiOptions] = useState([]);
   const [cityOptions, setCityOptions] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
-
-  const [searchTerm, setSearchTerm] = useState(''); // ✅ keyword search
+  const [searchTerm, setSearchTerm] = useState('');
 
   // --- Fetch Provinsi ---
   useEffect(() => {
@@ -66,7 +65,7 @@ function VacancyList() {
     fetchCities();
   }, [filter.provinsi]);
 
-  // --- Fetch Semua Lowongan berdasarkan filter provinsi/kota ---
+  // --- Fetch Lowongan ---
   useEffect(() => {
     const fetchVacancies = async () => {
       setLoading(true);
@@ -77,7 +76,6 @@ function VacancyList() {
         paramsBase.append('order_direction', 'DESC');
 
         let allData = [];
-
         const kodeProv = filter.provinsi?.value || '';
         const namaKab = filter.kota?.value || '';
         let page = 1;
@@ -128,12 +126,10 @@ function VacancyList() {
     fetchVacancies();
   }, [filter.provinsi, filter.kota]);
 
-  // Reset page ke 1 setiap filter berubah
   useEffect(() => {
     setCurrentPage(1);
   }, [filter.provinsi, filter.kota, searchTerm]);
 
-  // --- Filter berdasarkan keyword (frontend) ---
   const filteredVacancies = vacanciesRaw.filter((v) => {
     const keyword = searchTerm.toLowerCase();
     return (
@@ -143,7 +139,6 @@ function VacancyList() {
     );
   });
 
-  // --- Pagination ---
   const start = (currentPage - 1) * perPage;
   const end = start + perPage;
   const pagedData = filteredVacancies.slice(start, end);
@@ -152,9 +147,9 @@ function VacancyList() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Filter bar */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-6">
         {/* 🔍 Search Bar */}
-        <div className="flex-1 min-w-[200px]">
+        <div className="w-full sm:flex-1">
           <input
             type="text"
             placeholder="Cari lowongan..."
@@ -163,8 +158,9 @@ function VacancyList() {
             className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring focus:ring-blue-200"
           />
         </div>
+
         {/* Provinsi */}
-        <div className="flex-1 min-w-[200px]">
+        <div className="w-full sm:flex-1">
           <Select
             options={provinsiOptions}
             value={filter.provinsi}
@@ -177,11 +173,19 @@ function VacancyList() {
             }
             placeholder="Pilih Provinsi"
             isClearable
+            className="text-sm"
+            styles={{
+              control: (base) => ({
+                ...base,
+                minHeight: '40px',
+                fontSize: '14px',
+              }),
+            }}
           />
         </div>
 
         {/* Kota */}
-        <div className="flex-1 min-w-[200px]">
+        <div className="w-full sm:flex-1">
           <Select
             options={cityOptions}
             value={filter.kota}
@@ -194,6 +198,14 @@ function VacancyList() {
             placeholder="Pilih Kabupaten/Kota"
             isClearable
             isDisabled={!filter.provinsi}
+            className="text-sm"
+            styles={{
+              control: (base) => ({
+                ...base,
+                minHeight: '40px',
+                fontSize: '14px',
+              }),
+            }}
           />
         </div>
       </div>
