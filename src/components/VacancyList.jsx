@@ -5,7 +5,6 @@ import Pagination from './Pagination';
 
 function VacancyList() {
   const [vacanciesRaw, setVacanciesRaw] = useState([]);
-  const [vacanciesFiltered, setVacanciesFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const perPage = 12;
@@ -65,7 +64,7 @@ function VacancyList() {
     fetchCities();
   }, [filter.provinsi]);
 
-  // --- Fetch Vacancies (loop semua halaman untuk filter provinsi/kota) ---
+  // --- Fetch Semua Lowongan berdasarkan filter provinsi/kota ---
   useEffect(() => {
     const fetchVacancies = async () => {
       setLoading(true);
@@ -77,50 +76,35 @@ function VacancyList() {
 
         let allData = [];
 
-        if (!filter.provinsi && !filter.kota) {
-          // normal paginate
-          paramsBase.append('page', currentPage);
-          paramsBase.append('limit', perPage);
+        // fetch semua page berdasarkan provinsi/kota
+        const kodeProv = filter.provinsi?.value || '';
+        const namaKab = filter.kota?.value || '';
+        let page = 1;
+        let hasMore = true;
 
-          const url = `https://maganghub.kemnaker.go.id/be/v1/api/list/vacancies-aktif?${paramsBase.toString()}`;
+        while (hasMore) {
+          const params = new URLSearchParams(paramsBase);
+          params.append('page', page);
+          params.append('limit', 500);
+          if (kodeProv) params.append('kode_provinsi', kodeProv);
+          if (namaKab) params.append('nama_kabupaten', namaKab);
+
+          const url = `https://maganghub.kemnaker.go.id/be/v1/api/list/vacancies-aktif?${params.toString()}`;
           const res = await fetch(url);
           const json = await res.json();
 
-          allData = json.data || [];
-          setTotalPages(json?.meta?.pagination?.last_page ?? 1);
-        } else {
-          // fetch semua page berdasarkan provinsi/kota
-          const kodeProv = filter.provinsi?.value || '';
-          const namaKab = filter.kota?.value || '';
-          let page = 1;
-          let hasMore = true;
-
-          while (hasMore) {
-            const params = new URLSearchParams(paramsBase);
-            params.append('page', page);
-            params.append('limit', 500);
-            if (kodeProv) params.append('kode_provinsi', kodeProv);
-            if (namaKab) params.append('nama_kabupaten', namaKab);
-
-            const url = `https://maganghub.kemnaker.go.id/be/v1/api/list/vacancies-aktif?${params.toString()}`;
-            const res = await fetch(url);
-            const json = await res.json();
-
-            const data = json.data || [];
-            if (data.length === 0) {
-              hasMore = false;
-            } else {
-              allData = [...allData, ...data];
-              page++;
-            }
-
-            if (page > 2000) hasMore = false; // safety stop
+          const data = json.data || [];
+          if (data.length === 0) {
+            hasMore = false;
+          } else {
+            allData = [...allData, ...data];
+            page++;
           }
 
-          setTotalPages(Math.ceil(allData.length / perPage));
+          if (page > 2000) hasMore = false; // safety stop
         }
 
-        // --- Mapping tambahan untuk deskripsi ---
+        // Tambahkan deskripsi singkat
         const mapped = allData.map((v) => {
           const deskripsiSingkat = v.deskripsi_posisi
             ? v.deskripsi_posisi.length > 120
@@ -131,23 +115,28 @@ function VacancyList() {
         });
 
         setVacanciesRaw(mapped);
-        setVacanciesFiltered(mapped);
+        setTotalPages(Math.ceil(mapped.length / perPage));
       } catch (err) {
         console.error('Error fetching vacancies', err);
         setVacanciesRaw([]);
-        setVacanciesFiltered([]);
+        setTotalPages(1);
       } finally {
         setLoading(false);
       }
     };
 
     fetchVacancies();
-  }, [currentPage, filter.provinsi, filter.kota]);
+  }, [filter.provinsi, filter.kota]); // ⚠️ hapus currentPage dari dependency
 
   // Reset page ke 1 setiap filter berubah
   useEffect(() => {
     setCurrentPage(1);
   }, [filter.provinsi, filter.kota]);
+
+  // --- Data yang ditampilkan per halaman ---
+  const start = (currentPage - 1) * perPage;
+  const end = start + perPage;
+  const pagedData = vacanciesRaw.slice(start, end);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -193,17 +182,12 @@ function VacancyList() {
         <div className="text-center mt-20 text-gray-600 animate-pulse">
           🔄 Sedang memuat data lowongan...
         </div>
-      ) : vacanciesFiltered.length > 0 ? (
+      ) : pagedData.length > 0 ? (
         <>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {(() => {
-              const start = (currentPage - 1) * perPage;
-              const end = start + perPage;
-              const pagedData = vacanciesFiltered.slice(start, end);
-              return pagedData.map((v) => (
-                <VacancyCard key={v.id_posisi} vacancy={v} />
-              ));
-            })()}
+            {pagedData.map((v) => (
+              <VacancyCard key={v.id_posisi} vacancy={v} />
+            ))}
           </div>
           <div className="mt-6">
             <Pagination
