@@ -18,6 +18,8 @@ function VacancyList() {
   const [cityOptions, setCityOptions] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
 
+  const [searchTerm, setSearchTerm] = useState(''); // ✅ keyword search
+
   // --- Fetch Provinsi ---
   useEffect(() => {
     const fetchProvinsi = async () => {
@@ -76,7 +78,6 @@ function VacancyList() {
 
         let allData = [];
 
-        // fetch semua page berdasarkan provinsi/kota
         const kodeProv = filter.provinsi?.value || '';
         const namaKab = filter.kota?.value || '';
         let page = 1;
@@ -101,10 +102,9 @@ function VacancyList() {
             page++;
           }
 
-          if (page > 2000) hasMore = false; // safety stop
+          if (page > 2000) hasMore = false;
         }
 
-        // Tambahkan deskripsi singkat
         const mapped = allData.map((v) => {
           const deskripsiSingkat = v.deskripsi_posisi
             ? v.deskripsi_posisi.length > 120
@@ -126,22 +126,43 @@ function VacancyList() {
     };
 
     fetchVacancies();
-  }, [filter.provinsi, filter.kota]); // ⚠️ hapus currentPage dari dependency
+  }, [filter.provinsi, filter.kota]);
 
   // Reset page ke 1 setiap filter berubah
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter.provinsi, filter.kota]);
+  }, [filter.provinsi, filter.kota, searchTerm]);
 
-  // --- Data yang ditampilkan per halaman ---
+  // --- Filter berdasarkan keyword (frontend) ---
+  const filteredVacancies = vacanciesRaw.filter((v) => {
+    const keyword = searchTerm.toLowerCase();
+    return (
+      v.nama_posisi?.toLowerCase().includes(keyword) ||
+      v.nama_instansi?.toLowerCase().includes(keyword) ||
+      v.deskripsi_posisi?.toLowerCase().includes(keyword)
+    );
+  });
+
+  // --- Pagination ---
   const start = (currentPage - 1) * perPage;
   const end = start + perPage;
-  const pagedData = vacanciesRaw.slice(start, end);
+  const pagedData = filteredVacancies.slice(start, end);
+  const totalFilteredPages = Math.ceil(filteredVacancies.length / perPage);
 
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Filter bar */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
+        {/* 🔍 Search Bar */}
+        <div className="flex-1 min-w-[200px]">
+          <input
+            type="text"
+            placeholder="Cari lowongan..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+          />
+        </div>
         {/* Provinsi */}
         <div className="flex-1 min-w-[200px]">
           <Select
@@ -192,7 +213,7 @@ function VacancyList() {
           <div className="mt-6">
             <Pagination
               currentPage={currentPage}
-              totalPages={totalPages}
+              totalPages={totalFilteredPages}
               onPageChange={setCurrentPage}
             />
           </div>
