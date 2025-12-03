@@ -71,7 +71,7 @@ function VacancyList() {
       setLoading(true);
       try {
         const paramsBase = new URLSearchParams();
-        paramsBase.append('angkatan', '2');
+        paramsBase.append('angkatan', '3');
         paramsBase.append('order_by', 'jumlah_kuota');
         paramsBase.append('order_direction', 'DESC');
 
